@@ -34,8 +34,12 @@ public class Vista {
     }
 
     public String leerTexto(String mensaje) {
-        System.out.print(mensaje + ": ");
-        return scanner.nextLine().trim();
+        while (true) {
+            System.out.print(mensaje + ": ");
+            String texto = scanner.nextLine().trim();
+            if (!texto.isEmpty()) return texto;
+            mostrarError("Este dato no puede estar vacío :/");
+        }
     }
 
     public double leerDecimal(String mensaje) {
@@ -44,12 +48,12 @@ public class Vista {
                 System.out.print(mensaje + ": ");
                 double numero = Double.parseDouble(scanner.nextLine().trim());
                 if (!Double.isFinite(numero)) {
-                    System.out.println("Error: ingrese un número válido");
+                    System.out.println("Error: ingrese un número válido -_-");
                     continue;
                 }
                 return numero;
             } catch (NumberFormatException e) {
-                System.out.println("Error: debe ingresar un número decimal");
+                System.out.println("Error: debe ingresar un número decimal -_-");
             }
         }
     }
@@ -60,7 +64,7 @@ public class Vista {
                 System.out.print(mensaje + ": ");
                 return Integer.parseInt(scanner.nextLine().trim());
             } catch (NumberFormatException e) {
-                System.out.println("Error: debe ingresar un número entero");
+                System.out.println("Error: debe ingresar un número entero -_-");
             }
         }
     }
@@ -73,7 +77,7 @@ public class Vista {
             if (respuesta.equalsIgnoreCase("S")) return true;
             if (respuesta.equalsIgnoreCase("N")) return false;
 
-            System.out.println("Error: ingrese S o N");
+            System.out.println("Error: ingrese S o N -_-");
         }
     }
 
@@ -90,7 +94,7 @@ public class Vista {
             switch (opcion) {
                 case 1 -> { return TipoDestino.URBANO; }
                 case 2 -> { return TipoDestino.DEPARTAMENTAL; }
-                default -> System.out.println("Error: destino no válido");
+                default -> System.out.println("Error: destino no válido -_-");
             }
         }
     }

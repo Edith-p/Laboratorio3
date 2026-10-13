@@ -202,11 +202,11 @@ public class SistemaEnvios {
     }
 
     private Envio buscarEnvio(String codigo) {
-        if (codigo == null || codigo.trim().isEmpty()) throw new IllegalArgumentException("El codigo del envio no puede estar vacio");
+        if (codigo == null || codigo.trim().isEmpty()) throw new IllegalArgumentException("El codigo del envio no puede estar vacio -_-");
         for (Envio envio : envios) {
             if (envio.getCodigo().equalsIgnoreCase(codigo.trim())) return envio;
         }
-        throw new IllegalArgumentException("El envio no existe");
+        throw new IllegalArgumentException("El envio no existe :/");
     }
 
     private Vehiculo buscarVehiculo(String placa) {
@@ -214,14 +214,28 @@ public class SistemaEnvios {
         for (Vehiculo vehiculo : vehiculos) {
             if (vehiculo.getPlaca().equalsIgnoreCase(placa.trim())) return vehiculo;
         }
-        throw new IllegalArgumentException("El vehiculo no existe");
+        throw new IllegalArgumentException("El vehiculo no existe :/");
     }
 
     private Despacho buscarDespacho(String codigo) {
-        if (codigo == null || codigo.trim().isEmpty()) throw new IllegalArgumentException("El codigo del despacho no puede estar vacio");
+        if (codigo == null || codigo.trim().isEmpty()) throw new IllegalArgumentException("El codigo del despacho no puede estar vacio -_-");
         for (Despacho despacho : despachos) {
             if (despacho.getCodigo().equalsIgnoreCase(codigo.trim())) return despacho;
         }
         throw new IllegalArgumentException("El despacho no existe :(");
     }
+
+
+    public void validarCodigoDespachoDisponible(String codigo) {
+        if (codigo == null || codigo.trim().isEmpty()) {
+            throw new IllegalArgumentException("El codigo no puede estar vacio -_-");
+        }
+
+        for (Despacho despacho : despachos) {
+            if (despacho.getCodigo().equalsIgnoreCase(codigo.trim())) {
+                throw new IllegalArgumentException("El codigo del despacho ya existe :/");
+            }
+        }
+    }
+
 }

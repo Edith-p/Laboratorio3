@@ -60,19 +60,8 @@ public class Controlador {
         }
     }
 
+
     private void cotizarYRegistrarEnvio() {
-        Envio envio = leerEnvio();
-        vista.mostrarCotizacion(envio);
-
-        if (vista.leerSiNo("Desea registrar el envio")) {
-            sistema.registrarEnvio(envio);
-            vista.mostrarMensaje("Envio registrado correctamente");
-        } else {
-            vista.mostrarMensaje("Cotizacion finalizada sin registrar el envio");
-        }
-    }
-
-    private Envio leerEnvio() {
         vista.mostrarMensaje("""
             1. Sobre
             2. Paquete
@@ -80,86 +69,221 @@ public class Controlador {
             4. Carga refrigerada
             """);
 
-        int categoria = vista.leerEntero("Seleccione la categoria");
-        if (categoria < 1 || categoria > 4) throw new IllegalArgumentException("Categoria no valida");
+        int categoria;
+        while (true) {
+            categoria = vista.leerEntero("Seleccione la categoria");
+            if (categoria >= 1 && categoria <= 4) break;
+            vista.mostrarError("Categoria no valida");
+        }
 
-        String codigo = vista.leerTexto("Codigo del envio");
-        String remitente = vista.leerTexto("Nombre del remitente");
-        String destinatario = vista.leerTexto("Nombre del destinatario");
-        double pesoReal = vista.leerDecimal("Peso real en kg");
-        TipoDestino destino = vista.leerDestino();
+        double pesoReal;
+        while (true) {
+            pesoReal = vista.leerDecimal("Peso real en kg");
+            try {
+                if (pesoReal <= 0) throw new IllegalArgumentException("El peso debe ser mayor que cero");
+                if (categoria == 1) Sobre.validarPeso(pesoReal);
+                break;
+            } catch (IllegalArgumentException e) {
+                vista.mostrarError(e.getMessage());
+            }
+        }
 
-        Envio.validarDatosComunes(codigo, remitente, destinatario, pesoReal, destino);
-        sistema.validarCodigoEnvioDisponible(codigo);
+        TipoDestino destino;
+        while (true) {
+            destino = vista.leerDestino();
+            if (categoria != 4 || destino == TipoDestino.URBANO) break;
+            vista.mostrarError("La carga refrigerada solo permite destino urbano");
+        }
 
+        double largo = 0, ancho = 0, alto = 0, valor = 0, temperatura = 0;
+
+        if (categoria == 2 || categoria == 3) {
+            while (true) {
+                largo = vista.leerDecimal("Largo en cm");
+                if (largo > 0) break;
+                vista.mostrarError("El largo debe ser mayor que cero");
+            }
+
+            while (true) {
+                ancho = vista.leerDecimal("Ancho en cm");
+                if (ancho > 0) break;
+                vista.mostrarError("El ancho debe ser mayor que cero");
+            }
+
+            while (true) {
+                alto = vista.leerDecimal("Alto en cm");
+                try {
+                    Paquete.validarDimensiones(largo, ancho, alto);
+                    break;
+                } catch (IllegalArgumentException e) {
+                    vista.mostrarError(e.getMessage());
+                }
+            }
+        }
+
+        if (categoria == 3) {
+            while (true) {
+                valor = vista.leerDecimal("Valor declarado en Q");
+                try {
+                    PaqueteFragil.validarValorDeclarado(valor);
+                    break;
+                } catch (IllegalArgumentException e) {
+                    vista.mostrarError(e.getMessage());
+                }
+            }
+        }
+
+        if (categoria == 4) {
+            while (true) {
+                temperatura = vista.leerDecimal("Temperatura requerida");
+                try {
+                    CargaRefrigerada.validarRefrigeracion(destino, temperatura);
+                    break;
+                } catch (IllegalArgumentException e) {
+                    vista.mostrarError(e.getMessage());
+                }
+            }
+        }
+
+        Envio cotizacion;
+
+        // Usamos "TEMP" en varios campos solo para poder construir un objeto temporal de la cotizacion. Estos nunca se registran ni afectan otros datos del sistema.
         switch (categoria) {
-            case 1 -> {
-                Sobre.validarPeso(pesoReal);
-                return new Sobre(codigo, remitente, destinatario, pesoReal, destino);
-            }
-            case 2 -> {
-                double largo = vista.leerDecimal("Largo en cm");
-                double ancho = vista.leerDecimal("Ancho en cm");
-                double alto = vista.leerDecimal("Alto en cm");
-                Paquete.validarDimensiones(largo, ancho, alto);
-                return new Paquete(codigo, remitente, destinatario, pesoReal, destino, largo, ancho, alto);
-            }
-            case 3 -> {
-                double largo = vista.leerDecimal("Largo en cm");
-                double ancho = vista.leerDecimal("Ancho en cm");
-                double alto = vista.leerDecimal("Alto en cm");
-                double valor = vista.leerDecimal("Valor declarado en Q");
-                Paquete.validarDimensiones(largo, ancho, alto);
-                PaqueteFragil.validarValorDeclarado(valor);
-                return new PaqueteFragil(codigo, remitente, destinatario, pesoReal, destino, largo, ancho, alto, valor);
-            }
-            case 4 -> {
-                double temperatura = vista.leerDecimal("Temperatura requerida");
-                CargaRefrigerada.validarRefrigeracion(destino, temperatura);
-                return new CargaRefrigerada(codigo, remitente, destinatario, pesoReal, destino, temperatura);
-            }
+            case 1 -> cotizacion = new Sobre("TEMP", "TEMP", "TEMP", pesoReal, destino);
+            case 2 -> cotizacion = new Paquete("TEMP", "TEMP", "TEMP", pesoReal, destino, largo, ancho, alto);
+            case 3 -> cotizacion = new PaqueteFragil("TEMP", "TEMP", "TEMP", pesoReal, destino, largo, ancho, alto, valor);
+            case 4 -> cotizacion = new CargaRefrigerada("TEMP", "TEMP", "TEMP", pesoReal, destino, temperatura);
             default -> throw new IllegalArgumentException("Categoria no valida");
         }
+
+        vista.mostrarCotizacion(cotizacion);
+
+        if (!vista.leerSiNo("Desea registrar el envio")) {
+            vista.mostrarMensaje("Cotizacion finalizada sin registrar el envio");
+            return;
+        }
+
+        String codigo;
+        while (true) {
+            codigo = vista.leerTexto("Codigo del envio");
+            try {
+                sistema.validarCodigoEnvioDisponible(codigo);
+                break;
+            } catch (IllegalArgumentException e) {
+                vista.mostrarError(e.getMessage());
+            }
+        }
+
+        String remitente = vista.leerTexto("Nombre del remitente");
+        String destinatario = vista.leerTexto("Nombre del destinatario");
+
+        Envio envio;
+
+        switch (categoria) {
+            case 1 -> envio = new Sobre(codigo, remitente, destinatario, pesoReal, destino);
+            case 2 -> envio = new Paquete(codigo, remitente, destinatario, pesoReal, destino, largo, ancho, alto);
+            case 3 -> envio = new PaqueteFragil(codigo, remitente, destinatario, pesoReal, destino, largo, ancho, alto, valor);
+            case 4 -> envio = new CargaRefrigerada(codigo, remitente, destinatario, pesoReal, destino, temperatura);
+            default -> throw new IllegalArgumentException("Categoria no valida");
+        }
+
+        sistema.registrarEnvio(envio);
+        vista.mostrarMensaje("Envio registrado correctamente");
     }
+
+
+
+
 
     private void registrarVehiculo() {
-        String placa = vista.leerTexto("Placa del vehiculo");
-        double capacidad = vista.leerDecimal("Capacidad maxima en kg");
+        String placa;
+        while (true) {
+            placa = vista.leerTexto("Placa del vehiculo");
+            try {
+                sistema.validarPlacaDisponible(placa);
+                break;
+            } catch (IllegalArgumentException e) {
+                vista.mostrarError(e.getMessage());
+            }
+        }
+
+        double capacidad;
+        while (true) {
+            capacidad = vista.leerDecimal("Capacidad maxima en kg");
+            try {
+                Vehiculo.validarDatosVehiculo(placa, capacidad);
+                break;
+            } catch (IllegalArgumentException e) {
+                vista.mostrarError(e.getMessage());
+            }
+        }
+
         boolean refrigeracion = vista.leerSiNo("Tiene refrigeracion");
-
-        Vehiculo.validarDatosVehiculo(placa, capacidad);
-        sistema.validarPlacaDisponible(placa);
-
         sistema.registrarVehiculo(new Vehiculo(placa, capacidad, refrigeracion));
-        vista.mostrarMensaje("Vehiculo registrado correctamente");
+        vista.mostrarMensaje("Vehiculo registrado correctamente :P");
     }
 
-    private void crearDespacho() {
-        String codigo = vista.leerTexto("Codigo del despacho");
-        String placa = vista.leerTexto("Placa del vehiculo");
 
-        sistema.validarCreacionDespacho(codigo, placa);
+    
+    private void crearDespacho() {
+        String codigo;
+        while (true) {
+            codigo = vista.leerTexto("Codigo del despacho");
+            try {
+                sistema.validarCodigoDespachoDisponible(codigo);
+                break;
+            } catch (IllegalArgumentException e) {
+                vista.mostrarError(e.getMessage());
+            }
+        }
+
+        String placa;
+        while (true) {
+            placa = vista.leerTexto("Placa del vehiculo");
+            try {
+                sistema.validarCreacionDespacho(codigo, placa);
+                break;
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                vista.mostrarError(e.getMessage());
+            }
+        }
+
         sistema.crearDespacho(codigo, placa);
         vista.mostrarMensaje("Despacho creado correctamente");
     }
 
+
+    
     private void asignarEnvio() {
         String codigoDespacho = vista.leerTexto("Codigo del despacho");
-        String codigoEnvio = vista.leerTexto("Codigo del envio");
+        String codigoEnvio;
 
-        sistema.validarAsignacionEnvio(codigoDespacho, codigoEnvio);
+        while (true) {
+            codigoEnvio = vista.leerTexto("Codigo del envio");
+            try {
+                sistema.validarAsignacionEnvio(codigoDespacho, codigoEnvio);
+                break;
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                vista.mostrarError(e.getMessage());
+                return;
+            }
+        }
+
         sistema.asignarEnvio(codigoDespacho, codigoEnvio);
         vista.mostrarMensaje("Envio asignado correctamente");
     }
 
+
+    
     private void retirarEnvio() {
         String codigoDespacho = vista.leerTexto("Codigo del despacho");
         String codigoEnvio = vista.leerTexto("Codigo del envio");
 
         sistema.validarRetiroEnvio(codigoDespacho, codigoEnvio);
         sistema.retirarEnvio(codigoDespacho, codigoEnvio);
-        vista.mostrarMensaje("Envio retirado correctamente");
+        vista.mostrarMensaje("Envio retirado correctamente :D");
     }
+
 
     private void hacerSalirDespacho() {
         String codigo = vista.leerTexto("Codigo del despacho");
