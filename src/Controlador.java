@@ -185,7 +185,7 @@ public class Controlador {
             vista.mostrarMensaje("No hay envios registrados");
             return;
         }
-
+        vista.mostrarMensaje("\n========== ENVIOS REGISTRADOS ==========\n");
         for (Envio envio : sistema.consultarEnvios()) vista.mostrarMensaje(envio.toString());
     }
 

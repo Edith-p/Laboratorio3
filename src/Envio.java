@@ -15,6 +15,8 @@ public abstract class Envio {
     private static final double CARGO_REINTENTO = 15; 
     
     protected Envio (String codigo, String remitente, String destinatario, double pesoReal, TipoDestino destino){
+        validarDatosComunes(codigo, remitente, destinatario, pesoReal, destino);
+        
         this.codigo = codigo.trim().toUpperCase();
         this.remitente = remitente.trim(); 
         this.destinatario = destinatario.trim(); 
@@ -23,7 +25,9 @@ public abstract class Envio {
         this.estado = EstadoEnvio.EN_BODEGA; 
         this.intentos = 0; 
         this.ingresoRegistro = 0; 
+        this.ingresoReintentos = 0;
         this.cobroRegistrado = false; 
+        
     }
 
 
@@ -46,6 +50,9 @@ public abstract class Envio {
 
         }
 
+        if (!Double.isFinite(pesoReal) || pesoReal <= 0) {
+            throw new IllegalArgumentException("EL peso debe ser mayor a o -_ -"); 
+        }
     }
 
     public String getCodigo(){
@@ -86,12 +93,16 @@ public abstract class Envio {
         return intentos; 
     }
 
-    public double getIngresoTotal(){
-        return this.ingresoRegistro + this.ingresoReintentos;
+    public double getIngresoRegistro() {
+    return ingresoRegistro;
     }
 
     public double getIngresoReintentos(){
-        return ingresoRegistro; 
+        return ingresoReintentos; 
+    }
+
+    public double getIngresoTotal(){
+        return ingresoRegistro + ingresoReintentos;
     }
 
     public abstract double calcularCosto();
@@ -115,8 +126,8 @@ public abstract class Envio {
         return CARGO_REINTENTO; 
     }
 
-    protected boolean tieneIntentosDisponibles(){
-        return this.intentos < getMaximoIntentos(); 
+    public boolean tieneIntentosDisponibles(){
+        return intentos < getMaximoIntentos(); 
     }
 
 
@@ -182,16 +193,33 @@ public abstract class Envio {
 
     @Override
     public String toString() {
-        return "Codigo: " + this.codigo
-                + "\nRemitente: " + this.remitente
-                + "\nDestinatario: " + this.destinatario
-                + "\nPeso real: " + this.pesoReal + " kg"
-                + "\nDestino: " + this.destino
-                + "\nEstado: " + this.estado
-                + "\nIntentos: " + this.intentos
-                + "\nIngreso por registro: Q" + this.ingresoRegistro
-                + "\nIngreso por reintentos: Q" + this.ingresoReintentos
-                + "\nIngreso total: Q" + getIngresoTotal();
+        return String.format("""
+        ----------------------------------------
+        Codigo:              %s
+        Categoria:           %s
+        Remitente:           %s
+        Destinatario:        %s
+        Destino:             %s
+        Peso real:           %.2f kg
+        Estado:              %s
+        Intentos:            %d de %d
+        Ingreso registro:    Q%.2f
+        Ingreso reintentos:  Q%.2f
+        Ingreso total:       Q%.2f
+        """,
+        codigo,
+        getCategoria(),
+        remitente,
+        destinatario,
+        destino,
+        pesoReal,
+        estado,
+        intentos,
+        getMaximoIntentos(),
+        ingresoRegistro,
+        ingresoReintentos,
+        getIngresoTotal()
+    );
     }
 
 }
