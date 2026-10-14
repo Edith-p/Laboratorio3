@@ -1,4 +1,3 @@
-
 public class Controlador {
     private SistemaEnvios sistema;
     private Vista vista;
@@ -80,7 +79,9 @@ public class Controlador {
         while (true) {
             pesoReal = vista.leerDecimal("Peso real en kg");
             try {
-                if (pesoReal <= 0) throw new IllegalArgumentException("El peso debe ser mayor que cero");
+                if (!Double.isFinite(pesoReal) || pesoReal <= 0) {
+                    throw new IllegalArgumentException("El peso debe ser mayor que cero y un numero valido");
+                }
                 if (categoria == 1) Sobre.validarPeso(pesoReal);
                 break;
             } catch (IllegalArgumentException e) {
@@ -309,8 +310,10 @@ public class Controlador {
             vista.mostrarMensaje("No hay envios registrados");
             return;
         }
-        vista.mostrarMensaje("\n========== ENVIOS REGISTRADOS ==========\n");
-        for (Envio envio : sistema.consultarEnvios()) vista.mostrarMensaje(envio.toString());
+        vista.mostrarMensaje("\n+-+-+-+-+-+- ENVIOS REGISTRADOS +-+-+-+-+-+-\n");
+        for (Envio envio : sistema.consultarEnvios()) {
+            vista.mostrarMensaje(envio.toString());
+        }
     }
 
     private void consultarVehiculos() {
